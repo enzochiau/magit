@@ -1653,6 +1653,16 @@ set before loading libary `magit'.")
 (eval-after-load 'dired-x
   '(define-key magit-status-mode-map [remap dired-jump] 'magit-dired-jump))
 
+(defvar magit-list-tag-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map magit-mode-map)
+    (define-key map (kbd ".") 'magit-mark-item)
+    (define-key map (kbd "=") 'magit-diff-with-mark)
+    (define-key map (kbd "e") 'magit-log-show-more-entries)
+    (define-key map (kbd "h") 'magit-log-toggle-margin)
+    map)
+  "Keymap for `magit-list-tag-mode'.")
+
 (defvar magit-log-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map magit-mode-map)
@@ -6035,7 +6045,7 @@ depending on the value of option `magit-commit-squash-commit'.
 ;;;###autoload
 (defun magit-tag (name rev &optional annotate)
   "Create a new tag with the given NAME at REV.
-With a prefix argument annotate the tag.
+With a prefix argument ANNOTATE the tag.
 \('git tag [--annotate] NAME REV')."
   (interactive (list (magit-read-tag "Tag name")
                      (magit-read-rev "Place tag on"
@@ -6054,6 +6064,16 @@ With a prefix argument annotate the tag.
 \('git tag -d NAME')."
   (interactive (list (magit-read-tag "Delete Tag" t)))
   (magit-run-git "tag" "-d" magit-custom-options name))
+
+;;;###autoload
+(defun magit-list-tag ()
+  "List all the tags."
+  (interactive)
+  (switch-to-buffer magit-list-tag-buffer-name)
+  (apply #'process-file magit-git-executable nil (list t nil) nil
+         (append magit-git-standard-options
+                 (magit-flatten-onelevel (list "tag" "-l" "-n"))))
+  (magit-list-tag-mode))
 
 ;;;;; Stashing
 
@@ -6274,6 +6294,12 @@ With a prefix argument another branch can be chosen."
 ;;; Modes (2)
 ;;;; Log Mode
 ;;;;; Log Core
+
+(define-derived-mode magit-list-tag-mode fundamental-mode "Magit List Tags"
+  "Mode for looking at git tags."
+  :group 'magit)
+
+(defvar magit-list-tag-buffer-name "*magit-list-tags*")
 
 (define-derived-mode magit-log-mode magit-mode "Magit Log"
   "Mode for looking at git log.
